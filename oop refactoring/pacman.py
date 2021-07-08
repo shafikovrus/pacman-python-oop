@@ -3,36 +3,46 @@ import pygame
 # Initialize the game engine
 pygame.init()
 
-# Define the colors we will use in RGB format
+# Set global variables
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 PINK_LIGHT = (255, 200, 200)
-
-# Set the height and width of the screen
+WIDTH = 224
+HEIGHT = 288
 scale = 2
-size = [224 * scale, 288 * scale]  # Old-style screensize right from 80-s scaled x2 both sides
-screen = pygame.display.set_mode(size)
+clock = pygame.time.Clock()
+FPS = 8
+size = [WIDTH * scale, HEIGHT * scale]  # Old-style screensize right from 80-s scaled both sides
+directions = {'stop': (0, 0), 'left': (-4, 0), 'right': (4, 0), 'up': (0, -4), 'down': (0, 4)}
 pygame.display.set_caption("OOP Python – Pacman")
+pygame.display.set_icon(pygame.image.load(r'Images\Pacman_open_mouth.png'))
+screen = pygame.display.set_mode(size)
 
 
-class Player:
+
+class Player(pygame.sprite.Sprite):
     """
     Our player`s drawing of model and controlling
     """
-    def __init__(self):
-        pass
-
-    def draw_pacman(self, x, y, index):
-        """
-        Initial draw of animated Pacman
-        :param x, y: coordinates of Pacman
-        :param index: used for animation
-        """
+    def __init__(self, x, y, index):
+        pygame.sprite.Sprite.__init__(self)
         pacman_images = [
-            pygame.transform.scale(pygame.image.load(r'Images\Pacman_open_mouth.png'), [13 * scale, 13 * scale]),
-            pygame.transform.scale(pygame.image.load(r'Images\Pacman_closed_mouth.png'), [13 * scale, 13 * scale])]
+            pygame.transform.scale(pygame.image.load(r'Images\Pacman_open_mouth.png'), [13*scale, 13*scale]),
+            pygame.transform.scale(pygame.image.load(r'Images\Pacman_closed_mouth.png'), [13*scale, 13*scale])]
         pacman_surf = pacman_images[index]
-        screen.blit(pacman_surf, (x * scale, y * scale))
+        screen.blit(pacman_surf, (x*scale, y*scale))
+        self.image = pacman_surf
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (x*scale, y*scale)
+
+    def update(self, direction):
+        if self.rect.left > WIDTH*scale:
+            self.rect.left = 0
+        elif self.rect.right < 0:
+            self.rect.right = WIDTH*scale
+
+        self.rect.left += directions[direction][0]
+        self.rect.top += directions[direction][1]
 
 
 class Monsters:
@@ -75,19 +85,16 @@ class Monsters:
         screen.blit(clyde_surf, (x * scale, y * scale))
 
 
-class GameField:
+class GameField(pygame.sprite.Sprite):
+    """
+    Takes 224x288 field from already drawn one
+    Snap point = top left
+    """
     def __init__(self):
-        pass
-
-    def draw_field(self):
-        """
-        Takes 224x288 field from already drawn one
-        Snap point = top left
-        """
-        screen.fill(BLACK)
-        field_surf = pygame.transform.scale(pygame.image.load(r'Images\Game_field.png'), size)
-        field_rect = field_surf.get_rect(topleft=(0, 0))
-        screen.blit(field_surf, field_rect)
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.transform.scale(pygame.image.load(r'Images\Game_field_transparent.png'), size)
+        self.rect = self.image.get_rect(topleft=(0, 0))
+        screen.blit(self.image, (0, 0))
 
     def dots(self):
         """
@@ -208,43 +215,58 @@ class GameWindow:
 
     def main_loop(self):
         # Loop until the user clicks the close button.
+        all_sprites = pygame.sprite.Group()
         done = False
-        clock = pygame.time.Clock()
-        animation_index = 1
-        while not done:
-            clock.tick(8)
-            for event in pygame.event.get():  # User did something
-                if event.type == pygame.QUIT:  # If user clicked close
-                    done = True  # Flag that we are done so we exit this loop
 
-            draw_game_field = GameField()
-            draw_game_field.draw_field()
+        animation_index = 1
+        pacman_direction = 'stop'
+
+        player = Player(106, 206, animation_index)
+        all_sprites.add(player)
+
+        draw_game_field = GameField()
+        all_sprites.add(draw_game_field)
+        screen.fill(BLACK)
+
+        while not done:
+            clock.tick(FPS)
             draw_game_field.dots()
             draw_game_field.big_dots()
             draw_game_field.draw_text('1UP', 0, 2048)
             draw_game_field.draw_lives(3)
 
-
-            draw_player = Player()
-            draw_player.draw_pacman(106, 206, animation_index)
-            pygame.display.update()
             if animation_index == 0:
                 animation_index = 1
             else:
                 animation_index = 0
-            
+
             draw_monster = Monsters()
             draw_monster.draw_blinky(105, 110)
             draw_monster.draw_pinky(89, 136)
             draw_monster.draw_inky(105, 136)
             draw_monster.draw_clyde(121, 136)
 
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:  # If user clicked close
+                    done = True
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_DOWN:
+                        pacman_direction = 'down'
+                    if event.key == pygame.K_UP:
+                        pacman_direction = 'up'
+                    if event.key == pygame.K_LEFT:
+                        pacman_direction = 'left'
+                    if event.key == pygame.K_RIGHT:
+                        pacman_direction = 'right'
 
-            # Go ahead and update the screen with what we've drawn.
-            # This MUST happen after all the other drawing commands.
+
+            # if pygame.sprite.collide_rect(player, draw_game_field) == True:
+            #     pacman_direction = 'stop'
+
+            all_sprites.update(pacman_direction)
+            all_sprites.draw(screen)
+            pygame.display.update()
             pygame.display.flip()
-
-        # Be IDLE friendly
         pygame.quit()
 
 
