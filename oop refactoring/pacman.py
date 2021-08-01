@@ -6,6 +6,7 @@ pygame.init()
 # Set global variables
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
+BLUE = (0, 0, 255)
 PINK_LIGHT = (255, 200, 200)
 WIDTH = 224
 HEIGHT = 288
@@ -17,7 +18,6 @@ directions = {'stop': (0, 0), 'left': (-4, 0), 'right': (4, 0), 'up': (0, -4), '
 pygame.display.set_caption("OOP Python – Pacman")
 pygame.display.set_icon(pygame.image.load(r'Images\Pacman_open_mouth.png'))
 screen = pygame.display.set_mode(size)
-
 
 
 class Player(pygame.sprite.Sprite):
@@ -95,6 +95,7 @@ class GameField(pygame.sprite.Sprite):
         self.image = pygame.transform.scale(pygame.image.load(r'Images\Game_field_transparent.png'), size)
         self.rect = self.image.get_rect(topleft=(0, 0))
         screen.blit(self.image, (0, 0))
+        pass
 
     def dots(self):
         """
@@ -226,6 +227,7 @@ class GameWindow:
 
         draw_game_field = GameField()
         all_sprites.add(draw_game_field)
+
         screen.fill(BLACK)
 
         while not done:
@@ -263,9 +265,10 @@ class GameWindow:
             # if pygame.sprite.collide_rect(player, draw_game_field) == True:
             #     pacman_direction = 'stop'
 
-            all_sprites.update(pacman_direction)
-            all_sprites.draw(screen)
             pygame.display.update()
+            all_sprites.update(pacman_direction)
+            screen.fill(BLACK)
+            all_sprites.draw(screen)
             pygame.display.flip()
         pygame.quit()
 

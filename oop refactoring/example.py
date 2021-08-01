@@ -1,31 +1,94 @@
 import pygame
-import sys
+import random
 
+WIDTH = 480
+HEIGHT = 600
 FPS = 60
-W = 700  # ширина экрана
-H = 300  # высота экрана
-WHITE = (255, 255, 255)
-BLUE = (0, 70, 225)
 
-sc = pygame.display.set_mode((W, H))
+# Р—Р°РґР°РµРј С†РІРµС‚Р°
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+YELLOW = (255, 255, 0)
+
+# РЎРѕР·РґР°РµРј РёРіСЂСѓ Рё РѕРєРЅРѕ
+pygame.init()
+pygame.mixer.init()
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Shmup!")
 clock = pygame.time.Clock()
 
-# координаты и радиус круга
-x = W // 2
-y = H // 2
-r = 50
+class Player(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface((50, 40))
+        self.image.fill(GREEN)
+        self.rect = self.image.get_rect()
+        self.rect.centerx = WIDTH / 2
+        self.rect.bottom = HEIGHT - 10
+        self.speedx = 0
 
-while 1:
-    for i in pygame.event.get():
-        if i.type == pygame.QUIT:
-            sys.exit()
-        elif i.type == pygame.KEYDOWN:
-            if i.key == pygame.K_LEFT:
-                x -= 3
-            elif i.key == pygame.K_RIGHT:
-                x += 3
+    def update(self):
+        self.speedx = 0
+        keystate = pygame.key.get_pressed()
+        if keystate[pygame.K_LEFT]:
+            self.speedx = -8
+        if keystate[pygame.K_RIGHT]:
+            self.speedx = 8
+        self.rect.x += self.speedx
+        if self.rect.right > WIDTH:
+            self.rect.right = WIDTH
+        if self.rect.left < 0:
+            self.rect.left = 0
 
-    sc.fill(WHITE)
-    pygame.draw.circle(sc, BLUE, (x, y), r)
-    pygame.display.update()
+class Mob(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface((30, 40))
+        self.image.fill(RED)
+        self.rect = self.image.get_rect()
+        self.rect.x = random.randrange(WIDTH - self.rect.width)
+        self.rect.y = random.randrange(-100, -40)
+        self.speedy = random.randrange(1, 8)
+        self.speedx = random.randrange(-3, 3)
+
+    def update(self):
+        self.rect.x += self.speedx
+        self.rect.y += self.speedy
+        if self.rect.top > HEIGHT + 10 or self.rect.left < -25 or self.rect.right > WIDTH + 20:
+            self.rect.x = random.randrange(WIDTH - self.rect.width)
+            self.rect.y = random.randrange(-100, -40)
+            self.speedy = random.randrange(1, 8)
+
+all_sprites = pygame.sprite.Group()
+mobs = pygame.sprite.Group()
+player = Player()
+all_sprites.add(player)
+for i in range(8):
+    m = Mob()
+    all_sprites.add(m)
+    mobs.add(m)
+
+# Р¦РёРєР» РёРіСЂС‹
+running = True
+while running:
+    # Р”РµСЂР¶РёРј С†РёРєР» РЅР° РїСЂР°РІРёР»СЊРЅРѕР№ СЃРєРѕСЂРѕСЃС‚Рё
     clock.tick(FPS)
+    # Р’РІРѕРґ РїСЂРѕС†РµСЃСЃР° (СЃРѕР±С‹С‚РёСЏ)
+    for event in pygame.event.get():
+        # РїСЂРѕРІРµСЂРєР° РґР»СЏ Р·Р°РєСЂС‹С‚РёСЏ РѕРєРЅР°
+        if event.type == pygame.QUIT:
+            running = False
+
+    # РћР±РЅРѕРІР»РµРЅРёРµ
+    all_sprites.update()
+
+    # Р РµРЅРґРµСЂРёРЅРі
+    screen.fill(BLACK)
+    all_sprites.draw(screen)
+    # РџРѕСЃР»Рµ РѕС‚СЂРёСЃРѕРІРєРё РІСЃРµРіРѕ, РїРµСЂРµРІРѕСЂР°С‡РёРІР°РµРј СЌРєСЂР°РЅ
+    pygame.display.flip()
+
+pygame.quit()
